@@ -33,7 +33,8 @@
 
 #pragma once
 
-#include <lib/conversion/rotation.h>
+#include "../sensor_corrections/SensorCorrections.hpp"
+
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
 #include <px4_platform_common/px4_config.h>
@@ -45,7 +46,6 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_bias.h>
-#include <uORB/topics/sensor_correction.h>
 #include <uORB/topics/sensor_selection.h>
 
 #include <uORB/topics/sensor_gyro.h>
@@ -68,24 +68,16 @@ private:
 
 	void ParametersUpdate(bool force = false);
 	void SensorBiasUpdate(bool force = false);
-	void SensorCorrectionsUpdate(bool force = false);
 	bool SensorSelectionUpdate(bool force = false);
 
+	SensorCorrections _corrections;
+
 	static constexpr int MAX_SENSOR_COUNT = 3;
-
-	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::SENS_BOARD_ROT>) _param_sens_board_rot,
-
-		(ParamFloat<px4::params::SENS_BOARD_X_OFF>) _param_sens_board_x_off,
-		(ParamFloat<px4::params::SENS_BOARD_Y_OFF>) _param_sens_board_y_off,
-		(ParamFloat<px4::params::SENS_BOARD_Z_OFF>) _param_sens_board_z_off
-	)
 
 	uORB::Publication<vehicle_angular_velocity_s> _vehicle_angular_velocity_pub{ORB_ID(vehicle_angular_velocity)};
 
 	uORB::Subscription _params_sub{ORB_ID(parameter_update)};
 	uORB::Subscription _sensor_bias_sub{ORB_ID(sensor_bias)};
-	uORB::Subscription _sensor_correction_sub{ORB_ID(sensor_correction)};
 
 	uORB::SubscriptionCallbackWorkItem _sensor_selection_sub{this, ORB_ID(sensor_selection)};
 	uORB::SubscriptionCallbackWorkItem _sensor_sub[MAX_SENSOR_COUNT] {
@@ -94,11 +86,7 @@ private:
 		{this, ORB_ID(sensor_gyro), 2}
 	};
 
-	matrix::Dcmf _board_rotation;
-
 	matrix::Vector3f _bias{0.f, 0.f, 0.f};
-	matrix::Vector3f _offset{0.f, 0.f, 0.f};
-	matrix::Vector3f _scale{1.f, 1.f, 1.f};
 
 	uint32_t _selected_sensor_device_id{0};
 	uint8_t _selected_sensor_sub_index{0};
