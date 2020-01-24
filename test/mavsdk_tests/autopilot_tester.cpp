@@ -21,6 +21,7 @@ void AutopilotTester::connect(const std::string uri)
     _telemetry.reset(new Telemetry(system));
     _action.reset(new Action(system));
     _mission.reset(new Mission(system));
+    _offboard.reset(new Offboard(system));
 }
 
 void AutopilotTester::wait_until_ready()
@@ -28,6 +29,20 @@ void AutopilotTester::wait_until_ready()
     std::cout << "Waiting for system to be ready" << std::endl;
     CHECK(poll_condition_with_timeout(
         [this]() { return _telemetry->health_all_ok(); }, std::chrono::seconds(20)));
+}
+
+void AutopilotTester::wait_until_ready_local_position_only()
+{
+    std::cout << "Waiting for system to be ready" << std::endl;
+    CHECK(poll_condition_with_timeout(
+        [this]() {
+	return
+	    (_telemetry->health().gyrometer_calibration_ok &&
+	     _telemetry->health().accelerometer_calibration_ok &&
+	     _telemetry->health().magnetometer_calibration_ok &&
+	     _telemetry->health().level_calibration_ok &&
+	     _telemetry->health().local_position_ok);
+	}, std::chrono::seconds(20)));
 }
 
 void AutopilotTester::set_takeoff_altitude(const float altitude_m)
@@ -132,4 +147,30 @@ std::shared_ptr<MissionItem>  AutopilotTester::_create_mission_item(
 void AutopilotTester::execute_rtl()
 {
     REQUIRE(Action::Result::SUCCESS == _action->return_to_launch());
+}
+
+void AutopilotTester::offboard_position_takeoff()
+{
+	Offboard::PositionNEDYaw position_ned_yaw;
+	position_ned_yaw.north_m = 0.0f;
+	position_ned_yaw.east_m = 0.0f;
+	position_ned_yaw.down_m = -2.0f;
+	position_ned_yaw.yaw_deg = 0.0f;
+	_offboard->set_position_ned(position_ned_yaw);
+	REQUIRE(Offboard::Result::SUCCESS == _offboard->start());
+
+	while (_telemetry->position_velocity_ned().position.down_m < -1.9f) {
+		std::cout << "waiting to reach z" << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+	}
+}
+
+void AutopilotTester::offboard_position_land()
+{
+	Offboard::PositionNEDYaw position_ned_yaw;
+	position_ned_yaw.north_m = 0.0f;
+	position_ned_yaw.east_m = 0.0f;
+	position_ned_yaw.down_m = 1.0f;
+	position_ned_yaw.yaw_deg = 0.0f;
+	_offboard->set_position_ned(position_ned_yaw);
 }

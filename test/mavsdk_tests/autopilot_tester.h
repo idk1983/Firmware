@@ -4,6 +4,7 @@
 #include <mavsdk/geometry.h>
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/mission/mission.h>
+#include <mavsdk/plugins/offboard/offboard.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 #include "catch2/catch.hpp"
 #include <chrono>
@@ -22,6 +23,7 @@ public:
 
     void connect(const std::string uri);
     void wait_until_ready();
+    void wait_until_ready_local_position_only();
     void set_takeoff_altitude(const float altitude_m);
     void arm();
     void takeoff();
@@ -31,6 +33,8 @@ public:
     void prepare_square_mission(MissionOptions mission_options);
     void execute_mission();
     void execute_rtl();
+    void offboard_position_takeoff();
+    void offboard_position_land();
 
 private:
     mavsdk::geometry::CoordinateTransformation _get_coordinate_transformation();
@@ -43,6 +47,7 @@ private:
     std::unique_ptr<mavsdk::Telemetry> _telemetry{};
     std::unique_ptr<mavsdk::Action> _action{};
     std::unique_ptr<mavsdk::Mission> _mission{};
+    std::unique_ptr<mavsdk::Offboard> _offboard{};
 };
 
 template<typename Rep, typename Period>

@@ -16,11 +16,16 @@ test_matrix = [
         "test_filter": "[multicopter]",
         "timeout_min": 20,
     },
-    #{
+    {
+        "model": "iris_opt_flow",
+        "test_filter": "[multicopter_opt_flow]",
+        "timeout_min": 20,
+    },
+    # {
     #    "model": "standard_vtol",
     #    "test_filter": "[vtol]",
     #    "timeout_min": 20,
-    #},
+    # },
     # {
     #     "model": "standard_plane",
     #     "test_filter": "[plane]",
@@ -120,9 +125,11 @@ class GzserverRunner(Runner):
                     workspace_dir + "/build/px4_sitl_default/build_gazebo",
                     "GAZEBO_MODEL_PATH":
                     workspace_dir + "/Tools/sitl_gazebo/models",
-                    "PX4_SIM_SPEED_FACTOR": str(speed_factor)}
+                    "PX4_SIM_SPEED_FACTOR": str(speed_factor),
+                    "DISPLAY": os.environ['DISPLAY']}
         self.cmd = "gzserver"
-        self.args = [workspace_dir + "/Tools/sitl_gazebo/worlds/" +
+        self.args = ["--verbose",
+                     workspace_dir + "/Tools/sitl_gazebo/worlds/" +
                      model + ".world"]
         self.log_prefix = "gzserver"
 
