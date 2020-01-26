@@ -2,9 +2,6 @@
 #include <iostream>
 #include <future>
 
-using namespace mavsdk;
-using namespace mavsdk::geometry;
-
 std::string connection_url {"udp://"};
 
 void AutopilotTester::connect(const std::string uri)
@@ -149,28 +146,36 @@ void AutopilotTester::execute_rtl()
     REQUIRE(Action::Result::SUCCESS == _action->return_to_launch());
 }
 
-void AutopilotTester::offboard_position_takeoff()
+void AutopilotTester::offboard_goto(const Offboard::PositionNEDYaw& target, float acceptance_radius, std::chrono::seconds timeout_duration)
 {
-	Offboard::PositionNEDYaw position_ned_yaw;
-	position_ned_yaw.north_m = 0.0f;
-	position_ned_yaw.east_m = 0.0f;
-	position_ned_yaw.down_m = -2.0f;
-	position_ned_yaw.yaw_deg = 0.0f;
-	_offboard->set_position_ned(position_ned_yaw);
-	REQUIRE(Offboard::Result::SUCCESS == _offboard->start());
-
-	while (_telemetry->position_velocity_ned().position.down_m < -1.9f) {
-		std::cout << "waiting to reach z" << std::endl;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
+    _offboard->set_position_ned(target);
+    REQUIRE(_offboard->start() == Offboard::Result::SUCCESS);
+    REQUIRE(poll_condition_with_timeout(
+        [=]() { return estimated_position_close_to(target, acceptance_radius); }, timeout_duration));
+    std::cout << "Target position reached" << std::endl;
 }
 
-void AutopilotTester::offboard_position_land()
+void AutopilotTester::offboard_land()
 {
-	Offboard::PositionNEDYaw position_ned_yaw;
-	position_ned_yaw.north_m = 0.0f;
-	position_ned_yaw.east_m = 0.0f;
-	position_ned_yaw.down_m = 1.0f;
-	position_ned_yaw.yaw_deg = 0.0f;
-	_offboard->set_position_ned(position_ned_yaw);
+    Offboard::VelocityNEDYaw land_velocity;
+    land_velocity.north_m_s = 0.0f;
+    land_velocity.east_m_s = 0.0f;
+    land_velocity.down_m_s = 1.0f;
+    land_velocity.yaw_deg = 0.0f;
+    _offboard->set_velocity_ned(land_velocity);
+}
+
+bool AutopilotTester::estimated_position_close_to(const Offboard::PositionNEDYaw& target_pos, float acceptance_radius)
+{
+    Telemetry::PositionNED est_pos = _telemetry->position_velocity_ned().position;
+    return (est_pos.north_m - target_pos.north_m) * (est_pos.north_m - target_pos.north_m) +
+           (est_pos.east_m - target_pos.east_m) * (est_pos.east_m - target_pos.east_m) +
+           (est_pos.down_m - target_pos.down_m) * (est_pos.down_m - target_pos.down_m) < acceptance_radius * acceptance_radius;
+}
+
+bool AutopilotTester::estimated_horizontal_position_close_to(const Offboard::PositionNEDYaw& target_pos, float acceptance_radius)
+{
+    Telemetry::PositionNED est_pos = _telemetry->position_velocity_ned().position;
+    return (est_pos.north_m - target_pos.north_m) * (est_pos.north_m - target_pos.north_m) +
+           (est_pos.east_m - target_pos.east_m) * (est_pos.east_m - target_pos.east_m) < acceptance_radius * acceptance_radius;
 }

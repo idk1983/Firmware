@@ -18,7 +18,7 @@ test_matrix = [
     },
     {
         "model": "iris_opt_flow",
-        "test_filter": "[multicopter_opt_flow]",
+        "test_filter": "[multicopter_offboard]",
         "timeout_min": 20,
     },
     # {

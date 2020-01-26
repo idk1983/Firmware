@@ -13,6 +13,9 @@
 
 extern std::string connection_url;
 
+using namespace mavsdk;
+using namespace mavsdk::geometry;
+
 class AutopilotTester {
 public:
     struct MissionOptions {
@@ -33,8 +36,13 @@ public:
     void prepare_square_mission(MissionOptions mission_options);
     void execute_mission();
     void execute_rtl();
-    void offboard_position_takeoff();
-    void offboard_position_land();
+    void offboard_goto(const Offboard::PositionNEDYaw& target, float acceptance_radius = 0.3f,
+                       std::chrono::seconds timeout_duration = std::chrono::seconds(60));
+    void offboard_land();
+    bool estimated_position_close_to(const Offboard::PositionNEDYaw& target_position, float acceptance_radius);
+    bool estimated_horizontal_position_close_to(const Offboard::PositionNEDYaw& target_pos, float acceptance_radius);
+
+
 
 private:
     mavsdk::geometry::CoordinateTransformation _get_coordinate_transformation();
