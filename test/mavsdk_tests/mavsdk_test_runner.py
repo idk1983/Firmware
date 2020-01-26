@@ -171,6 +171,8 @@ def main():
                         help="Abort on first unsuccessful test")
     parser.add_argument("--gui", default=False, action='store_true',
                         help="Display gzclient with simulation")
+    parser.add_argument("--model", type=str, default='all',
+                        help="Specify which model to run")
     args = parser.parse_args()
 
     if not is_everything_ready():
@@ -249,7 +251,20 @@ def run(args):
 
 def run_test_group(args):
     overall_success = True
-    for group in test_matrix:
+
+    if args.model == 'all':
+        models = test_matrix;
+    else:
+        found = False
+        for elem in test_matrix:
+            if elem['model'] == args.model:
+                models = [elem]
+                found = True
+        if found == False:
+            print("Specified model is not defined")
+            models = []
+
+    for group in models:
         print("Running test group for '{}' with filter '{}'"
               .format(group['model'], group['test_filter']))
 
